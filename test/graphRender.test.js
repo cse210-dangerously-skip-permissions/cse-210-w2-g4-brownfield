@@ -68,8 +68,9 @@ function makeElement(tagName) {
 
 /*
  * Load graphRender.js in an isolated context with the minimal document above.
- * The renderer is browser code, so its ES module export is removed before it
- * is evaluated by Node's vm module.
+ * The renderer is browser code, so its ES module exports are removed before it
+ * is evaluated by Node's vm module. Every `export function` is stripped (not
+ * just renderGraph) so helpers like axisCrossing parse and are returned too.
  */
 function setupRenderer() {
   const source = fs.readFileSync(
@@ -90,16 +91,15 @@ function setupRenderer() {
   const context = { document };
 
   const api = vm.runInNewContext(
-    source.replace(
-      'export function renderGraph',
-      'function renderGraph'
-    ) + '\n({ renderGraph });',
+    source.replace(/export function /g, 'function ') +
+      '\n({ renderGraph, axisCrossing });',
     context,
     { filename: 'graphRender.js' }
   );
 
   return {
     renderGraph: api.renderGraph,
+    axisCrossing: api.axisCrossing,
     container: makeElement('div'),
   };
 }
@@ -343,6 +343,8 @@ test('transparent graphs omit the SVG background rectangle', () => {
   );
 });
 
+/* ---------- Grid ---------- */
+
 const gridPoints = [{ x: 0, y: 0 }, { x: 10, y: 10 }];
 const gridRange = { xMin: 0, xMax: 10, yMin: 0, yMax: 10 };
 
@@ -356,6 +358,15 @@ function renderGrid(overrides = {}) {
 
 const gridLines = grid => grid.children.filter(node => node.attributes.class === 'grid-line');
 const isVertical = node => node.attributes.x1 === node.attributes.x2;
+
+// The first two top-level lines are the x axis and the y axis (grid lines sit inside a group).
+function axisLines(svg) {
+  const [xAxis, yAxis] = svg.children.filter(node => node.tagName === 'line');
+  return { xAxis: xAxis.attributes, yAxis: yAxis.attributes };
+}
+
+const tickLabels = svg => findByClass(svg, 'tick-label')
+  .map(node => node.textContent);
 
 test('grid is hidden by default', () => {
   assert.equal(renderGrid().grid, undefined);
@@ -395,14 +406,22 @@ test('grid lines span the whole plot area', () => {
 test('grid lines match the tick labels when the range is automatic', () => {
   const { svg, grid } = renderGrid({ showGrid: true });
   const labels = findByClass(svg, 'tick-label');
+  // The data starts at 0, so the padded range dips below 0 and the axes cross at
+  // the origin. Both 0 ticks then share one "0" label there instead of one each.
+  const originLabels = labels.filter(node => node.textContent === '0');
+  assert.equal(originLabels.length, 1);
+  const { xAxis, yAxis } = axisLines(svg);
   const tickX = labels.filter(node => node.attributes['text-anchor'] === 'middle')
-    .map(node => Number(node.attributes.x));
+    .map(node => Number(node.attributes.x))
+    .concat(Number(yAxis.x1));
   // Y labels are drawn 4px below their tick so the text is vertically centred.
-  const tickY = labels.filter(node => node.attributes['text-anchor'] === 'end')
-    .map(node => Number(node.attributes.y) - 4);
+  const tickY = labels.filter(node => node.attributes['text-anchor'] === 'end' && node !== originLabels[0])
+    .map(node => Number(node.attributes.y) - 4)
+    .concat(Number(xAxis.y1));
   const lines = gridLines(grid);
-  assert.deepEqual(lines.filter(isVertical).map(node => Number(node.attributes.x1)), tickX);
-  assert.deepEqual(lines.filter(node => !isVertical(node)).map(node => Number(node.attributes.y1)), tickY);
+  const sorted = values => [...values].sort((a, b) => a - b);
+  assert.deepEqual(sorted(lines.filter(isVertical).map(node => Number(node.attributes.x1))), sorted(tickX));
+  assert.deepEqual(sorted(lines.filter(node => !isVertical(node)).map(node => Number(node.attributes.y1))), sorted(tickY));
 });
 
 test('grid realigns when the axis range changes', () => {
@@ -437,4 +456,54 @@ test('grid is drawn on a transparent background too', () => {
   const { svg, grid } = renderGrid({ showGrid: true, transparentBackground: true });
   assert.equal(svg.children.some(node => node.attributes.class === 'chart-background'), false);
   assert.ok(grid);
+});
+
+/* ---------- Axis crossing ---------- */
+
+function renderChart(overrides = {}) {
+  const { renderGraph, container } = setupRenderer();
+  renderGraph({ type: 'scatter', points: gridPoints, ...overrides }, container);
+  return container.children[0];
+}
+
+test('axes cross at 0 when 0 is in range', () => {
+  const { axisCrossing } = setupRenderer();
+  assert.equal(axisCrossing({ min: -10, max: 10 }), 0);
+  assert.equal(axisCrossing({ min: -10, max: 0 }), 0);
+  assert.equal(axisCrossing({ min: 0, max: 10 }), 0);
+});
+
+test('axes stay on the low edge when 0 is out of range', () => {
+  const { axisCrossing } = setupRenderer();
+  assert.equal(axisCrossing({ min: 2, max: 10 }), 2);
+  assert.equal(axisCrossing({ min: -10, max: -2 }), -10);
+});
+
+test('axes go through the origin for four-quadrant data', () => {
+  const svg = renderChart({
+    points: [{ x: -5, y: -5 }, { x: 5, y: 5 }, { x: -5, y: 5 }, { x: 5, y: -5 }],
+  });
+  const { xAxis, yAxis } = axisLines(svg);
+  // Symmetric data, so the origin is the centre of the plot area.
+  assert.equal(Number(xAxis.y1), (52 + 324) / 2);
+  assert.equal(Number(yAxis.x1), (92 + 768) / 2);
+  // 0 is labelled once at the origin instead of once per axis.
+  assert.equal(tickLabels(svg).filter(label => label === '0').length, 1);
+  assert.ok(tickLabels(svg).includes('-5'));
+});
+
+test('axes stay bottom and left when the range starts at 0', () => {
+  const svg = renderChart({ type: 'line', range: gridRange });
+  const { xAxis, yAxis } = axisLines(svg);
+  assert.equal(Number(xAxis.y1), 324);
+  assert.equal(Number(yAxis.x1), 92);
+});
+
+test('only the axis whose range contains 0 moves', () => {
+  const svg = renderChart({ range: { xMin: -4, xMax: 4, yMin: 2, yMax: 6 } });
+  const { xAxis, yAxis } = axisLines(svg);
+  assert.equal(Number(xAxis.y1), 324);
+  assert.equal(Number(yAxis.x1), (92 + 768) / 2);
+  // The x axis is still on the edge, so its 0 label does not hit the y axis.
+  assert.ok(tickLabels(svg).includes('0'));
 });
