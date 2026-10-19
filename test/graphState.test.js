@@ -41,6 +41,7 @@ test('publishes the default graph state', async () => {
     axesColor: '#000000',
     backgroundColor: '#ffffff',
     transparentBackground: false,
+    showGrid: false,
     pointStyle: 'circle',
     xAxisName: '',
     yAxisName: '',
