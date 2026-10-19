@@ -124,7 +124,17 @@ function drawGrid(svg, xBounds, yBounds, scaleX, scaleY, graph) {
   svg.appendChild(group);
 }
 
-// Preserve the shared axes and scale behavior used by the existing renderer.
+/**
+ * Finds where the other axis should cross this one.
+ * Axes cross at 0 when 0 is in range, so graphs with negative values show all
+ * four quadrants. Otherwise the axis stays on the low edge like before.
+ * @param {{min: number, max: number}} bounds The axis limits.
+ * @returns {number} The graph value where the other axis is drawn.
+ */
+export function axisCrossing(bounds) {
+  return bounds.min <= 0 && 0 <= bounds.max ? 0 : bounds.min;
+}
+
 /** Draws both axes, their ticks, and the configured axis labels. */
 function drawAxes(svg, xBounds, yBounds, scaleX, scaleY, graph) {
   const { width, height, margin } = CHART;
@@ -135,19 +145,32 @@ function drawAxes(svg, xBounds, yBounds, scaleX, scaleY, graph) {
   const axesColor = graph.axesColor || "var(--color-ink, #000000)";
   const axisStyle = { stroke: axesColor, "stroke-width": 2.5 };
 
-  svg.appendChild(svgElement("line", { x1: left, y1: bottom, x2: right, y2: bottom, ...axisStyle }));
-  svg.appendChild(svgElement("line", { x1: left, y1: top, x2: left, y2: bottom, ...axisStyle }));
+  // Screen positions of the x axis (horizontal line) and y axis (vertical line).
+  const xAxisY = scaleY(axisCrossing(yBounds));
+  const yAxisX = scaleX(axisCrossing(xBounds));
+  // When both axes move off the edges, the two 0 labels would land on the axis
+  // lines, so they are replaced by one 0 at the origin.
+  const originInside = axisCrossing(yBounds) !== yBounds.min && axisCrossing(xBounds) !== xBounds.min;
+
+  svg.appendChild(svgElement("line", { x1: left, y1: xAxisY, x2: right, y2: xAxisY, ...axisStyle }));
+  svg.appendChild(svgElement("line", { x1: yAxisX, y1: top, x2: yAxisX, y2: bottom, ...axisStyle }));
 
   for (const tick of xBounds.ticks) {
     const x = scaleX(tick);
-    svg.appendChild(svgElement("line", { x1: x, y1: bottom, x2: x, y2: bottom + 5, ...axisStyle }));
-    addText(svg, formatTick(tick), x, bottom + 21, { "text-anchor": "middle", class: "tick-label" });
+    svg.appendChild(svgElement("line", { x1: x, y1: xAxisY, x2: x, y2: xAxisY + 5, ...axisStyle }));
+    if (originInside && tick === 0) continue;
+    addText(svg, formatTick(tick), x, xAxisY + 21, { "text-anchor": "middle", class: "tick-label" });
   }
 
   for (const tick of yBounds.ticks) {
     const y = scaleY(tick);
-    svg.appendChild(svgElement("line", { x1: left - 5, y1: y, x2: left, y2: y, ...axisStyle }));
-    addText(svg, formatTick(tick), left - 9, y + 4, { "text-anchor": "end", class: "tick-label" });
+    svg.appendChild(svgElement("line", { x1: yAxisX - 5, y1: y, x2: yAxisX, y2: y, ...axisStyle }));
+    if (originInside && tick === 0) continue;
+    addText(svg, formatTick(tick), yAxisX - 9, y + 4, { "text-anchor": "end", class: "tick-label" });
+  }
+
+  if (originInside) {
+    addText(svg, "0", yAxisX - 9, xAxisY + 21, { "text-anchor": "end", class: "tick-label" });
   }
 
   addText(svg, graph.xAxisName || "X", (left + right) / 2, height - 12, {
