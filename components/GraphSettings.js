@@ -69,6 +69,7 @@ function DataSettings({ onCsvLoad = doNothing }) {
  * @param {Function} [options.onAxesColorChange=doNothing] - Callback triggered when the axes color value changes.
  * @param {function(string): void} [options.onBackgroundColorChange=doNothing] - Receives the selected background color as a hexadecimal string.
  * @param {function(boolean): void} [options.onTransparentBackgroundChange=doNothing] - Receives whether the background is transparent.
+ * @param {function(boolean): void} [options.onShowGridChange=doNothing] - Receives whether the background grid is shown.
  * @param {Function} [options.onPointStyleChange=doNothing] - Callback triggered when the point shape/style selection changes.
  * @returns {HTMLFieldSetElement} The constructed DOM.
  */
@@ -78,6 +79,7 @@ function StyleSettings({
   onAxesColorChange = doNothing,
   onBackgroundColorChange = doNothing,
   onTransparentBackgroundChange = doNothing,
+  onShowGridChange = doNothing,
   onPointStyleChange = doNothing,
 }) {
   const column = createSettingsColumn('Style', `
@@ -86,6 +88,7 @@ function StyleSettings({
     <label class="color-row">Axes color <input type="color" name="axes-color" value="#000000"></label>
     <label class="color-row">Background color <input type="color" name="background-color" value="#ffffff"></label>
     <label class="checkbox-row"><input type="checkbox" name="transparent-background"> Transparent background</label>
+    <label class="checkbox-row"><input type="checkbox" name="show-grid"> Show grid</label>
     <label>Point style
       <select name="point-style">
         <option value="circle">Circle</option>
@@ -104,6 +107,7 @@ function StyleSettings({
     getInput('background-color').disabled = event.target.checked;
     onTransparentBackgroundChange(event.target.checked);
   });
+  getInput('show-grid').addEventListener('change', event => onShowGridChange(event.target.checked));
   getInput('point-style').addEventListener('change', event => onPointStyleChange(event.target.value));
   return column;
 }

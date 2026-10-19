@@ -89,6 +89,41 @@ function formatTick(value) {
   return Number(value.toPrecision(6)).toString();
 }
 
+/**
+ * Draws light grid lines at every axis tick so the grid matches the tick labels exactly.
+ * Call before drawing the axes and points so the grid sits behind them.
+ * @param {SVGSVGElement} svg The chart SVG.
+ * @param {{ticks: number[]}} xBounds Bounds and tick values for the x axis.
+ * @param {{ticks: number[]}} yBounds Bounds and tick values for the y axis.
+ * @param {(value: number) => number} scaleX Turns an x value into an SVG x position.
+ * @param {(value: number) => number} scaleY Turns a y value into an SVG y position.
+ * @param {Object} graph Graph settings from graphState.js.
+ */
+function drawGrid(svg, xBounds, yBounds, scaleX, scaleY, graph) {
+  if (!graph.showGrid) return;
+  const { width, height, margin } = CHART;
+  const left = margin.left;
+  const right = width - margin.right;
+  const top = margin.top;
+  const bottom = height - margin.bottom;
+  const axesColor = graph.axesColor || "var(--color-ink, #000000)";
+  const group = svgElement("g", { class: "chart-grid", "aria-hidden": "true" });
+
+  for (const tick of xBounds.ticks) {
+    const x = scaleX(tick);
+    group.appendChild(svgElement("line", {
+      x1: x, y1: top, x2: x, y2: bottom, stroke: axesColor, class: "grid-line"
+    }));
+  }
+  for (const tick of yBounds.ticks) {
+    const y = scaleY(tick);
+    group.appendChild(svgElement("line", {
+      x1: left, y1: y, x2: right, y2: y, stroke: axesColor, class: "grid-line"
+    }));
+  }
+  svg.appendChild(group);
+}
+
 // Preserve the shared axes and scale behavior used by the existing renderer.
 /** Draws both axes, their ticks, and the configured axis labels. */
 function drawAxes(svg, xBounds, yBounds, scaleX, scaleY, graph) {
@@ -167,6 +202,7 @@ function prepareChart(graph, container, title) {
     }));
   }
   if (graph.title) addText(svg, graph.title, width / 2, 30, { "text-anchor": "middle", class: "chart-title" });
+  drawGrid(svg, xBounds, yBounds, scaleX, scaleY, graph);
   drawAxes(svg, xBounds, yBounds, scaleX, scaleY, graph);
   return { svg, points: visiblePoints, allPoints: points, scaleX, scaleY };
 }

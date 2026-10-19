@@ -8,6 +8,7 @@ const graph = {
   axesColor: '#000000',
   backgroundColor: '#ffffff',
   transparentBackground: false,
+  showGrid: false,
   pointStyle: 'circle',
   xAxisName: '',
   yAxisName: '',

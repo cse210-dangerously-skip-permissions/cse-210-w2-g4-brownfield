@@ -27,7 +27,7 @@ function makeElement(tag, computed) {
   node.style.owner = node;
   return node;
 }
-function setup({ empty = false, failClick = false, title = 'Temperature & Time', failImage = false, failEncode = false, backgroundColor = '#ffffff', transparent = false } = {}) {
+function setup({ empty = false, failClick = false, title = 'Temperature & Time', failImage = false, failEncode = false, backgroundColor = '#ffffff', transparent = false, showGrid = false } = {}) {
   const svg = makeElement('svg');
   svg.viewBox = { baseVal: { x: 0, y: 0, width: 800, height: 400 } };
   svg.setAttribute('viewBox', '0 0 800 400');
@@ -38,7 +38,13 @@ function setup({ empty = false, failClick = false, title = 'Temperature & Time',
   const background = makeElement('rect', { fill: backgroundColor });
   background.setAttribute('fill', backgroundColor);
   background.setAttribute('class', 'chart-background');
-  svg.children = transparent ? [label, line] : [background, label, line];
+  const gridLine = makeElement('line', { stroke: 'rgb(101, 67, 33)', 'stroke-width': '1px', 'stroke-opacity': '0.2' });
+  gridLine.setAttribute('class', 'grid-line');
+  const arrChildren = [label, line];
+  if (showGrid) arrChildren.unshift(gridLine);
+  if (!transparent) arrChildren.unshift(background);
+  svg.children = arrChildren;
+  // svg.children = transparent ? [label, line] : [background, label, line];
   const record = { urls: [], revoked: [], removed: 0, clicked: 0, timers: [] };
   const context = {
     Blob,
@@ -171,5 +177,24 @@ for (const format of ['svg', 'png', 'jpeg']) {
     assert.equal(record.serialized.children.some(child => child.tag === 'rect'), false);
     if (format === 'jpeg') assert.deepEqual(record.background, [0, 0, 1600, 800]);
     else assert.equal(record.background, undefined);
+  });
+}
+
+test('SVG export inlines grid line styles', () => {
+  const { serializeGraph, svg, record } = setup({ showGrid: true });
+  serializeGraph(svg);
+  const grid = record.serialized.children[1];
+  assert.equal(grid.attributes.class, 'grid-line');
+  assert.equal(grid.styles.stroke, 'rgb(101, 67, 33)');
+  assert.equal(grid.styles['stroke-width'], '1px');
+  assert.equal(grid.styles['stroke-opacity'], '0.2');
+});
+
+for (const format of ['svg', 'png', 'jpeg']) {
+  test(`${format} export keeps the grid on a transparent background`, async () => {
+    const { saveGraph, container, record } = setup({ transparent: true, showGrid: true });
+    await saveGraph(container, format);
+    assert.equal(record.serialized.children.some(child => child.attributes.class === 'grid-line'), true);
+    assert.equal(record.serialized.children.some(child => child.tag === 'rect'), false);
   });
 }
