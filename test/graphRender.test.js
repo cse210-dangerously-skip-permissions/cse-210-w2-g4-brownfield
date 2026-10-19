@@ -221,7 +221,7 @@ test('tick labels stay distinct for large values with a small range', () => {
   const labels = xTickLabels(svg).map(node => node.textContent);
   assert.ok(labels.length >= 2);
   assert.equal(new Set(labels).size, labels.length);
-  assert.ok(labels.includes('1000000001'));
+  assert.ok(labels.includes('1000000002'));
 });
 
 test('decimal tick labels have no floating point noise', () => {
@@ -230,4 +230,14 @@ test('decimal tick labels have no floating point noise', () => {
     ['0.1', '0.15', '0.2', '0.25', '0.3', '0.35', '0.4']);
   assert.deepEqual(yTickLabels(svg).map(node => node.textContent),
     ['0', '0.00005', '0.0001', '0.00015', '0.0002', '0.00025', '0.0003']);
+});
+
+test('long x tick labels are spaced so they do not overlap', () => {
+  const { svg } = render({ points: [{ x: 1e9, y: 0 }, { x: 1e9 + 5, y: 10 }] });
+  const labels = xTickLabels(svg);
+  // About 10px per character at the tick font size.
+  const widest = Math.max(...labels.map(node => node.textContent.length)) * 10;
+  for (let i = 1; i < labels.length; i++) {
+    assert.ok(labels[i].attributes.x - labels[i - 1].attributes.x > widest, 'labels overlap');
+  }
 });

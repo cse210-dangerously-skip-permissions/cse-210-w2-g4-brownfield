@@ -31,6 +31,39 @@ function roundToStep(value, step) {
 }
 
 /**
+ * Lists the tick values between min and max for one step size.
+ * Ticks are whole multiples of the step. Multiplying instead of adding the
+ * step each time keeps rounding errors from piling up, and the small tolerance
+ * keeps a tick that sits exactly on min or max. The limit prevents a bad range
+ * from creating an endless list of labels.
+ * @param {number} min Smallest axis value.
+ * @param {number} max Largest axis value.
+ * @param {number} step The gap between tick marks.
+ * @returns {number[]} The tick values.
+ */
+function buildTicks(min, max, step) {
+  const ticks = [];
+  const first = Math.ceil(min / step - 1e-9);
+  const last = Math.floor(max / step + 1e-9);
+  for (let i = first; i <= last && ticks.length < 100; i++) {
+    ticks.push(roundToStep(i * step, step));
+  }
+  return ticks;
+}
+
+/** Goes from one nice step to the next bigger one: 1, 2, 5, 10, 20, ... */
+function nextNiceStep(step) {
+  const power = 10 ** Math.floor(Math.log10(step) + 1e-9);
+  const fraction = Math.round(step / power);
+  return (fraction === 1 ? 2 : fraction === 2 ? 5 : 10) * power;
+}
+
+/** Number of characters in the longest tick label. */
+function longestLabel(ticks) {
+  return Math.max(...ticks.map(tick => formatTick(tick).length));
+}
+
+/**
  * Finds the start, end, and labels for one axis.
  * We leave a little room around the points so they do not touch the edge.
  * @param {Object[]} points The points currently in the graph.
@@ -59,16 +92,14 @@ function calculateBounds(points, key, requestedMin, requestedMax) {
     else { min -= padding; max += padding; }
   }
 
-  const tickStep = niceStep(max - min);
-  const ticks = [];
-  // Ticks are whole multiples of the step between min and max. Multiplying
-  // instead of adding the step each time keeps rounding errors from piling up,
-  // and the small tolerance keeps a tick that sits exactly on min or max. The
-  // limit prevents a bad range from creating an endless list of labels.
-  const first = Math.ceil(min / tickStep - 1e-9);
-  const last = Math.floor(max / tickStep + 1e-9);
-  for (let i = first; i <= last && ticks.length < 100; i++) {
-    ticks.push(roundToStep(i * tickStep, tickStep));
+  // Labels are about 10px per character at the tick font size. When the x
+  // labels are too wide to fit side by side, use the next nice step instead.
+  const roomPerLabel = key === "x" ? (CHART.width - CHART.margin.left - CHART.margin.right) : Infinity;
+  let tickStep = niceStep(max - min);
+  let ticks = buildTicks(min, max, tickStep);
+  while (ticks.length > 2 && ticks.length * (longestLabel(ticks) * 10 + 12) > roomPerLabel) {
+    tickStep = nextNiceStep(tickStep);
+    ticks = buildTicks(min, max, tickStep);
   }
   return { min, max, ticks };
 }
