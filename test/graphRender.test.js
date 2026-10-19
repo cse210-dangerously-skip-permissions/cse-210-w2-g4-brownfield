@@ -62,11 +62,11 @@ for (const type of ['scatter', 'line']) {
 }
 
 test('grid lines sit exactly on the axis ticks of a custom range', () => {
-  const { grid } = render({ showGrid: true, range });
+  const { grid } = render({ showGrid: true, range: { xMin: 0, xMax: 20, yMin: 0, yMax: 20 } });
   const lines = gridLines(grid);
-  // x: 0, 5, 10 across the plot area (92 to 768); y: 0, 5, 10 (324 to 52).
-  assert.deepEqual(lines.filter(isVertical).map(node => node.attributes.x1), [92, 430, 768]);
-  assert.deepEqual(lines.filter(node => !isVertical(node)).map(node => node.attributes.y1), [324, 188, 52]);
+  // x: 0, 5, 10, 15, 20 across the plot area (92 to 768); y: the same values (324 to 52).
+  assert.deepEqual(lines.filter(isVertical).map(node => node.attributes.x1), [92, 261, 430, 599, 768]);
+  assert.deepEqual(lines.filter(node => !isVertical(node)).map(node => node.attributes.y1), [324, 256, 188, 120, 52]);
 });
 
 test('grid lines span the whole plot area', () => {
@@ -127,4 +127,51 @@ test('grid is drawn on a transparent background too', () => {
   const { svg, grid } = render({ showGrid: true, transparentBackground: true });
   assert.equal(svg.children.some(node => node.attributes.class === 'chart-background'), false);
   assert.ok(grid);
+});
+
+// X tick labels are centred under their tick; y labels are right-aligned beside it.
+const xTickLabels = svg => findAll(svg, node => node.attributes.class === 'tick-label'
+  && node.attributes['text-anchor'] === 'middle');
+const yTickLabels = svg => findAll(svg, node => node.attributes.class === 'tick-label'
+  && node.attributes['text-anchor'] === 'end');
+
+test('every tick label sits where its value is on the scale', () => {
+  const ranges = [
+    { xMin: 0, xMax: 10, yMin: -3, yMax: 7 },
+    { xMin: 2.5, xMax: 97.3, yMin: 0.1, yMax: 0.4 },
+    { xMin: 1e9, xMax: 1e9 + 5, yMin: -0.15, yMax: 0.15 },
+  ];
+  for (const r of ranges) {
+    const { svg } = render({ range: r });
+    for (const label of xTickLabels(svg)) {
+      const expected = 92 + (Number(label.textContent) - r.xMin) / (r.xMax - r.xMin) * 676;
+      assert.ok(Math.abs(label.attributes.x - expected) < 1e-6, `x label ${label.textContent}`);
+    }
+    for (const label of yTickLabels(svg)) {
+      // Y labels are drawn 4px below their tick so the text is vertically centred.
+      const expected = 324 - (Number(label.textContent) - r.yMin) / (r.yMax - r.yMin) * 272;
+      assert.ok(Math.abs(label.attributes.y - 4 - expected) < 1e-6, `y label ${label.textContent}`);
+    }
+  }
+});
+
+test('an awkward custom range still gets several tick labels', () => {
+  const { svg } = render({ range: { xMin: 2.5, xMax: 97.3, yMin: 0, yMax: 10 } });
+  assert.deepEqual(xTickLabels(svg).map(node => node.textContent), ['20', '40', '60', '80']);
+});
+
+test('tick labels stay distinct for large values with a small range', () => {
+  const { svg } = render({ points: [{ x: 1e9, y: 0 }, { x: 1e9 + 5, y: 10 }] });
+  const labels = xTickLabels(svg).map(node => node.textContent);
+  assert.ok(labels.length >= 2);
+  assert.equal(new Set(labels).size, labels.length);
+  assert.ok(labels.includes('1000000001'));
+});
+
+test('decimal tick labels have no floating point noise', () => {
+  const { svg } = render({ range: { xMin: 0.1, xMax: 0.4, yMin: 0, yMax: 0.0003 } });
+  assert.deepEqual(xTickLabels(svg).map(node => node.textContent),
+    ['0.1', '0.15', '0.2', '0.25', '0.3', '0.35', '0.4']);
+  assert.deepEqual(yTickLabels(svg).map(node => node.textContent),
+    ['0', '0.00005', '0.0001', '0.00015', '0.0002', '0.00025', '0.0003']);
 });
