@@ -49,25 +49,31 @@ function parseCSV(text) {
         };
     }
     const firstRow = splitFields(lines[0].text);
-    if (firstRow.length !== 2) {
+    // Two columns are x,y. Three columns are series,x,y (long format): the first
+    // column names the series and the last two are the numbers, so all checks
+    // below look at the last two fields only.
+    const columnCount = firstRow.length;
+    if (columnCount !== 2 && columnCount !== 3) {
         return {
             success: false,
-            error: "CSV must have exactly two columns."
+            error: "CSV must have two columns (x,y) or three columns (series,x,y)."
         };
     }
-    const hasHeader = parseNumber(firstRow[0]) === null || parseNumber(firstRow[1]) === null;
+    const hasSeries = columnCount === 3;
+    const numericFields = firstRow.slice(-2);
+    const hasHeader = parseNumber(numericFields[0]) === null || parseNumber(numericFields[1]) === null;
     let headers;
     let startRow;
     if (hasHeader) {
-        if (firstRow[0] === "" || firstRow[1] === "") {
+        if (firstRow.some(field => field === "")) {
             return {
                 success: false,
-                error: "Both columns must have headers."
+                error: "Every column must have a header."
             };
         }
         headers = {
-            x: firstRow[0],
-            y: firstRow[1]
+            x: numericFields[0],
+            y: numericFields[1]
         };
         startRow = 1;
         if (lines.length < 2) {
@@ -93,20 +99,20 @@ function parseCSV(text) {
     for (let i = startRow; i < lines.length; i++) {
         const rowNumber = lines[i].number;
         const values = splitFields(lines[i].text);
-        if (values.length !== 2) {
+        if (values.length !== columnCount) {
             return {
                 success: false,
-                error: `Row ${rowNumber} must contain exactly two values.`
+                error: `Row ${rowNumber} must contain exactly ${columnCount === 2 ? "two" : "three"} values.`
             };
         }
-        if (values[0] === "" || values[1] === "") {
+        if (values.some(value => value === "")) {
             return {
                 success: false,
                 error: `Row ${rowNumber} contains a missing value.`
             };
         }
         const numbers = [];
-        for (const value of values) {
+        for (const value of values.slice(-2)) {
             const parsed = parseNumber(value);
             if (parsed === null) {
                 return {
@@ -126,7 +132,9 @@ function parseCSV(text) {
             numbers.push(parsed.number);
         }
         // "+ 0" turns -0 into 0
-        data.push({ x: numbers[0] + 0, y: numbers[1] + 0 });
+        const point = { x: numbers[0] + 0, y: numbers[1] + 0 };
+        if (hasSeries) point.series = values[0];
+        data.push(point);
     }
     if (prefixedValues.length > 0) {
         const first = prefixedValues[0];

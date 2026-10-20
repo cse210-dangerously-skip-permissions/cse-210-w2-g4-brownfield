@@ -165,7 +165,7 @@ test('invalid CSV never changes previously valid points or axis names', async ()
   await loader.load(csvFile('Time,Temp\n5,6'));
   const count = snapshots.length;
   const valid = snapshots.at(-1);
-  for (const invalid of ['x,y\n1,', 'x,y\n1,oops', 'x,y,z\n1,2,3', 'x,y\n1,1e16']) {
+  for (const invalid of ['x,y\n1,', 'x,y\n1,oops', 'w,x,y,z\n1,2,3,4', 'x,y\n1,1e16']) {
     assert.equal((await loader.load(csvFile(invalid))).success, false);
     assert.equal(snapshots.length, count);
     assert.deepEqual(snapshots.at(-1), valid);

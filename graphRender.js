@@ -1,6 +1,40 @@
 const SVG_NS = "http://www.w3.org/2000/svg";
 const CHART = { width: 800, height: 400, margin: { top: 52, right: 32, bottom: 76, left: 92 } };
+// Used only when a CSV has a series column; a single series keeps the user's colors.
+const SERIES_COLORS = ["#1f77b4", "#d62728", "#2ca02c", "#ff7f0e", "#9467bd", "#8c564b"];
 let clipIdCounter = 0;
+
+/**
+ * Groups points by their series name, keeping first-appearance order.
+ * Points without a series (two-column CSV or the data table) form one unnamed group.
+ * @param {Object[]} points
+ * @returns {Map<string, Object[]>}
+ */
+function groupBySeries(points) {
+  const groups = new Map();
+  for (const point of points) {
+    const name = point.series ?? "";
+    if (!groups.has(name)) groups.set(name, []);
+    groups.get(name).push(point);
+  }
+  return groups;
+}
+
+/** Picks a color for a series: the user's color for one series, a fixed palette for many. */
+function seriesColor(index, seriesCount, fallback) {
+  return seriesCount > 1 ? SERIES_COLORS[index % SERIES_COLORS.length] : fallback;
+}
+
+/** Draws a legend in the top-right corner of the plot area, one row per series. */
+function drawLegend(svg, names, colorFor) {
+  const { width, margin } = CHART;
+  const right = width - margin.right - 8;
+  names.forEach((name, i) => {
+    const y = margin.top + 10 + i * 20;
+    svg.appendChild(svgElement("rect", { x: right - 12, y: y - 10, width: 12, height: 12, fill: colorFor(i) }));
+    addText(svg, name, right - 18, y, { "text-anchor": "end", class: "legend-label" });
+  });
+}
 
 /**
  * Chooses a simple number to put between each pair of tick marks.
@@ -238,8 +272,10 @@ function prepareChart(graph, container, title) {
   if (!container || typeof container.replaceChildren !== "function") return null;
   container.classList.toggle('transparent-background', Boolean(graph.transparentBackground));
   container.style.backgroundColor = graph.transparentBackground ? 'transparent' : (graph.backgroundColor || '#ffffff');
+  // Each point remembers its position in graph.points so a click on a mark can find its table row.
   const points = Array.isArray(graph.points)
-    ? graph.points.filter(point => point && Number.isFinite(point.x) && Number.isFinite(point.y))
+    ? graph.points.map((point, index) => ({ ...point, index }))
+      .filter(point => Number.isFinite(point.x) && Number.isFinite(point.y))
     : [];
   if (points.length === 0) {
     container.replaceChildren();
@@ -281,8 +317,7 @@ function prepareChart(graph, container, title) {
   return { svg, points: visiblePoints, allPoints: points, scaleX, scaleY };
 }
 
-function drawPoints(svg, points, scaleX, scaleY, graph) {
-  const color = graph.pointColor || "var(--color-ink, #000000)";
+function drawPoints(svg, points, scaleX, scaleY, graph, color) {
   for (const point of points) {
     const x = scaleX(point.x);
     const y = scaleY(point.y);
@@ -299,50 +334,73 @@ function drawPoints(svg, points, scaleX, scaleY, graph) {
     } else {
       mark = svgElement("circle", { cx: x, cy: y, r: 7, fill: color, class: "data-point" });
     }
+    mark.setAttribute("data-index", point.index);
+    // Native SVG tooltip: hover shows which point this is before clicking it.
+    const title = svgElement("title");
+    title.textContent = `Point ${point.index + 1}${point.series ? ` (${point.series})` : ""}: ${point.x}, ${point.y}. Click to edit.`;
+    mark.appendChild(title);
     svg.appendChild(mark);
   }
+}
+
+/** Legend only when the data actually has named series. */
+function finishChart(chart, container, groups, colorFor) {
+  const names = [...groups.keys()];
+  if (names.some(name => name !== "")) drawLegend(chart.svg, names, colorFor);
+  container.replaceChildren(chart.svg);
 }
 
 function renderScatterPlot(graph, container) {
   const chart = prepareChart(graph, container, "Scatter graph");
   if (!chart) return;
-  drawPoints(chart.svg, chart.points, chart.scaleX, chart.scaleY, graph);
-  container.replaceChildren(chart.svg);
+  const groups = groupBySeries(chart.points);
+  const pointColor = i => seriesColor(i, groups.size, graph.pointColor || "var(--color-ink, #000000)");
+  [...groups.values()].forEach((points, i) =>
+    drawPoints(chart.svg, points, chart.scaleX, chart.scaleY, graph, pointColor(i)));
+  finishChart(chart, container, groups, pointColor);
 }
 
 function renderLineChart(graph, container) {
   const chart = prepareChart(graph, container, "Line graph");
   if (!chart) return;
 
-  const allSorted = [...chart.allPoints].sort((a, b) => a.x - b.x);
-  if (allSorted.length > 1) {
-    const { width, height, margin } = CHART;
-    const clipId = `line-clip-${++clipIdCounter}`;
+  // Lines use every point so a segment can run off the edge; the clip hides the overflow.
+  const allGroups = groupBySeries(chart.allPoints);
+  const lineColor = i => seriesColor(i, allGroups.size, graph.lineColor || "var(--color-ink, #000000)");
+  const pointColor = i => seriesColor(i, allGroups.size, graph.pointColor || "var(--color-ink, #000000)");
+  const { width, height, margin } = CHART;
+  const clipId = `line-clip-${++clipIdCounter}`;
+  const clipPath = svgElement("clipPath", { id: clipId });
+  clipPath.appendChild(svgElement("rect", {
+    x: margin.left,
+    y: margin.top,
+    width: width - margin.left - margin.right,
+    height: height - margin.top - margin.bottom,
+  }));
+  chart.svg.appendChild(clipPath);
 
-    const clipPath = svgElement("clipPath", { id: clipId });
-    clipPath.appendChild(svgElement("rect", {
-      x: margin.left,
-      y: margin.top,
-      width: width - margin.left - margin.right,
-      height: height - margin.top - margin.bottom,
-    }));
-    chart.svg.appendChild(clipPath);
-
-    const coordinates = allSorted
+  [...allGroups.values()].forEach((points, i) => {
+    const sorted = [...points].sort((a, b) => a.x - b.x);
+    if (sorted.length < 2) return;
+    const coordinates = sorted
       .map(point => `${chart.scaleX(point.x)},${chart.scaleY(point.y)}`)
       .join(" ");
     chart.svg.appendChild(svgElement("polyline", {
       points: coordinates,
       class: "data-line",
-      stroke: graph.lineColor || "var(--color-ink, #000000)",
+      stroke: lineColor(i),
       "clip-path": `url(#${clipId})`,
     }));
-  }
+  });
 
-  // Dots: only the ones inside the range, sorted for consistency.
-  const sortedPoints = [...chart.points].sort((a, b) => a.x - b.x);
-  drawPoints(chart.svg, sortedPoints, chart.scaleX, chart.scaleY, graph);
-  container.replaceChildren(chart.svg);
+  // Dots: only the ones inside the range, sorted for consistency. Keyed by the
+  // same series order as the lines so colors match.
+  const visible = groupBySeries(chart.points);
+  [...allGroups.keys()].forEach((name, i) => {
+    const sorted = [...(visible.get(name) ?? [])].sort((a, b) => a.x - b.x);
+    drawPoints(chart.svg, sorted, chart.scaleX, chart.scaleY, graph, pointColor(i));
+  });
+  finishChart(chart, container, allGroups, lineColor);
 }
 
 /**

@@ -91,6 +91,11 @@
 
     document.querySelector('[name="csv"]').closest('.settings-column').append(csvStatus);
     const chart = document.getElementById('chart');
+    // Clicking a point jumps to its row in the data table.
+    chart.addEventListener('click', event => {
+      const mark = event.target.closest('.data-point');
+      if (mark) dataTable.focusRow(Number(mark.dataset.index));
+    });
     const saveButton = document.getElementById('save-graph');
     const formatSelect = document.getElementById('export-format');
     const saveStatus = document.getElementById('save-status');

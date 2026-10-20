@@ -54,10 +54,58 @@ test("rejects empty CSV", () => {
 });
 
 // Test 5: CSV with extra columns
-test("rejects CSV with extra columns", () => {
-    const result = parseCSV("Time,Temperature,Humidity\n1,72,50");
+test("rejects CSV with four columns", () => {
+    const result = parseCSV("Time,Temperature,Humidity,Wind\n1,72,50,3");
 
     assert.equal(result.success, false);
+    assert.match(result.error, /two columns.*three columns/);
+});
+
+// Test 5b: column count is checked in the header row and in every data row
+test("rejects one column and rows whose column count differs from the header", () => {
+    for (const text of ["Time\n1\n2", "1\n2", "Time,Temperature\n1,72\n2,75,50", "a,x,y\nA,1,2\nA,3"]) {
+        const result = parseCSV(text);
+        assert.equal(result.success, false, text);
+        assert.match(result.error, /two columns|two values|three values/, text);
+    }
+});
+
+// Test 5c: a long-format CSV (series,x,y) tags each point with its series
+test("parses three-column long-format CSV into points with a series", () => {
+    const result = parseCSV("agent,day,bugs\nAgent A,1,4\nAgent A,2,7\nAgent B,1,2");
+
+    assert.equal(result.success, true);
+    assert.deepStrictEqual(result.headers, { x: "day", y: "bugs" });
+    assert.deepStrictEqual(result.data, [
+        { x: 1, y: 4, series: "Agent A" },
+        { x: 2, y: 7, series: "Agent A" },
+        { x: 1, y: 2, series: "Agent B" }
+    ]);
+});
+
+// Test 5d: two-column points have no series key at all
+test("two-column points carry no series", () => {
+    const result = parseCSV("day,bugs\n1,4\n2,7");
+
+    assert.equal(result.success, true);
+    assert.deepStrictEqual(result.data, [{ x: 1, y: 4 }, { x: 2, y: 7 }]);
+});
+
+// Test 5e: a three-column file with no header is data from the first row
+test("parses three columns without a header", () => {
+    const result = parseCSV("A,1,4\nB,1,2");
+
+    assert.deepStrictEqual(result.headers, { x: "X", y: "Y" });
+    assert.equal(result.data.length, 2);
+    assert.equal(result.data[1].series, "B");
+});
+
+// Test 5f: a missing series name is a missing value
+test("rejects a three-column row with an empty series", () => {
+    const result = parseCSV("agent,day,bugs\n,1,4");
+
+    assert.equal(result.success, false);
+    assert.match(result.error, /Row 2 contains a missing value/);
 });
 
 

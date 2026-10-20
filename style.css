@@ -51,6 +51,8 @@ main {
 .data-point-cross { fill: none; stroke-width: 3; stroke-linecap: round; }
 .chart-empty { margin: 0; color: #666; font-size: 16px; }
 .grid-line { stroke-width: 1; stroke-opacity: 0.2; }
+.legend-label { font-size: 15px; }
+.data-point { cursor: pointer; }
 #chart svg { display: block; width: 100%; height: 100%; font-family: inherit; }
 .bottom-area { grid-column: 1 / -1; overflow: hidden; } /* must come after .panel to override its overflow */
 
@@ -87,7 +89,10 @@ input[type="color"] { width: 40px; height: 28px; padding: 0; }
 .table-scroll { flex: 1; overflow-y: auto; }
 .coordinate-table { width: 100%; table-layout: fixed; border-spacing: 4px; }
 .coordinate-table th { text-align: left; }
-.add-row { display: block; width: 50%; margin: 4px auto 0; }
+.add-row,
+.show-all { display: block; width: 50%; margin: 4px auto 0; }
+.show-all[hidden] { display: none; } /* display: block above would otherwise override the attribute */
+.selected-row { background: var(--color-grey); outline: var(--border); } /* row reached by clicking a point */
 
 .graph-settings { height: 100%; display: flex; flex-direction: column; gap: 8px; }
 .settings-columns {
