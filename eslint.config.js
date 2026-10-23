@@ -14,12 +14,12 @@ export default [
     },
   },
   // Classic browser scripts: loaded via <script> tags and sharing top-level
-  // globals across files (index.html wires createCsvLoader/parseTextInput to
-  // the rest of the app), so no-unused-vars is a false positive here.
+  // globals with the inline scripts in index.html and test.html. Each file
+  // lists the names it shares in an `/* exported */` comment, which ESLint
+  // only honors in script mode.
   {
     files: ["csv_loader.js", "data_processer.js"],
     languageOptions: { sourceType: "script" },
-    rules: { "no-unused-vars": "off" },
   },
   // graphExport.js intentionally matches control characters to strip them
   // from exported file names (in saveGraph); disable the rule for this file

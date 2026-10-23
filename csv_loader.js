@@ -1,3 +1,4 @@
+/* exported createCsvLoader */
 function createCsvLoader({ parse, onStatus, setGraphValue = () => {} }) {
   let requestId = 0;
 

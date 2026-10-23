@@ -1,3 +1,4 @@
+/* exported parseCSV, parseTextInput */
 // Beyond these limits the renderer's axis math overflows or the SVG becomes too slow to use.
 const MAX_ABS_VALUE = 1e15;
 const MAX_ROWS = 10000;
