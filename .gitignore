@@ -153,3 +153,6 @@ vite.config.ts.timestamp-*
 .DS_Store
 # Playwright
 test-results/
+
+# Coverage reports
+lcov.info

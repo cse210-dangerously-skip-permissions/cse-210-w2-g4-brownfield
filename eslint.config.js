@@ -30,7 +30,13 @@ export default [
   },
   // CommonJS with Node globals: static server, unit tests, Playwright files.
   {
-    files: ["server.js", "test/**/*.js", "e2e/**/*.js", "playwright.config.js"],
+    files: [
+      "server.js",
+      "coverage-ratchet.js",
+      "test/**/*.js",
+      "e2e/**/*.js",
+      "playwright.config.js",
+    ],
     languageOptions: { sourceType: "commonjs", globals: globals.node },
   },
   {

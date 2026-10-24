@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
+const { pathToFileURL } = require("node:url");
 
 function setup(setGraphValue) {
   const parser = fs.readFileSync(
@@ -13,11 +14,16 @@ function setup(setGraphValue) {
   const source = fs.existsSync(loaderPath)
     ? fs.readFileSync(loaderPath, "utf8")
     : "";
+  // Run each file as its own script in one shared context (like separate
+  // <script> tags) so coverage is reported per source file.
+  const context = vm.createContext({});
+  vm.runInContext(parser, context, {
+    filename: path.join(__dirname, "../data_processer.js"), // Naming the script lets coverage attribute lines to the source file
+  });
+  vm.runInContext(source, context, { filename: loaderPath }); // Naming the script lets coverage attribute lines to the source file
   const api = vm.runInNewContext(
-    parser +
-      "\n" +
-      source +
-      '\n({ parseCSV, create: typeof createCsvLoader === "function" ? createCsvLoader : undefined })',
+    '({ parseCSV, create: typeof createCsvLoader === "function" ? createCsvLoader : undefined })',
+    context,
   );
   assert.equal(typeof api.create, "function", "CSV loading must be available");
   const messages = [];
@@ -135,14 +141,11 @@ test("a successful load clears previous error feedback", async () => {
 
 let graphInstance = 0;
 async function setupGraph() {
-  const source = fs.readFileSync(
-    path.join(__dirname, "../graphState.js"),
-    "utf8",
-  );
+  // The query string gives a fresh module instance while keeping a real
+  // file URL, so coverage is attributed to graphState.js.
   const graphState = await import(
-    "data:text/javascript;base64," +
-      Buffer.from(source).toString("base64") +
-      "#" +
+    pathToFileURL(path.join(__dirname, "../graphState.js")).href +
+      "?instance=" +
       graphInstance++
   );
   const snapshots = [];

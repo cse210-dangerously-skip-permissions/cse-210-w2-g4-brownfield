@@ -9,6 +9,7 @@
   "scripts": {
     "start": "node server.js",
     "test": "node --test",
+    "test:coverage": "node coverage-ratchet.js",
     "test:e2e": "playwright test",
     "lint": "eslint .",
     "format": "prettier --write .",

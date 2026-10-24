@@ -93,7 +93,7 @@ function setupRenderer() {
     source.replace(/export function /g, "function ") +
       "\n({ renderGraph, axisCrossing });",
     context,
-    { filename: "graphRender.js" },
+    { filename: path.join(__dirname, "../graphRender.js") }, // Naming the script lets coverage attribute lines to the source file
   );
 
   return {

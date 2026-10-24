@@ -152,6 +152,7 @@ function setup({
     source.replace(/export (async )?function /g, "$1function ") +
       "\n({ serializeGraph, saveGraph })",
     context,
+    { filename: path.join(__dirname, "../graphExport.js") }, // Naming the script lets coverage attribute lines to the source file
   );
   return {
     ...api,

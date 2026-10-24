@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
 const path = require("node:path");
+const { pathToFileURL } = require("node:url");
 
 let moduleInstance = 0;
 
@@ -10,16 +10,11 @@ let moduleInstance = 0;
  * Importing a fresh module instance keeps tests isolated from one another.
  */
 async function freshGraphState() {
-  const source = fs.readFileSync(
-    path.join(__dirname, "../graphState.js"),
-    "utf8",
-  );
-
-  const encodedSource = Buffer.from(source).toString("base64");
-
-  return import(
-    `data:text/javascript;base64,${encodedSource}#${moduleInstance++}`
-  );
+  const url = pathToFileURL(path.join(__dirname, "../graphState.js"));
+  // The query string gives a fresh module instance while keeping a real
+  // file URL, so coverage is attributed to graphState.js.
+  url.search = `instance=${moduleInstance++}`;
+  return import(url.href);
 }
 
 test("publishes the default graph state", async () => {

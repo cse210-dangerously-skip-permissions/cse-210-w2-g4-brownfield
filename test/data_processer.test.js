@@ -11,6 +11,7 @@ const source = fs.readFileSync(
 );
 const { parseCSV, parseTextInput } = vm.runInThisContext(
   source + "\n({ parseCSV, parseTextInput });",
+  { filename: path.join(__dirname, "../data_processer.js") }, // Naming the script lets coverage attribute lines to the source file
 );
 
 // Test 1: Valid CSV with a good format.
