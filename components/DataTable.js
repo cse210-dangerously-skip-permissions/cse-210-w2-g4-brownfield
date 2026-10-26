@@ -1,4 +1,14 @@
 const doNothing = () => {};
+
+/**
+ * The data table, with methods the page calls when the graph state changes.
+ * @typedef {HTMLDivElement & {
+ *   setPoints: (points: {x: number, y: number, series?: string}[]) => void,
+ *   focusRow: (pointIndex: number) => void,
+ *   setAxisNames: (xName: string, yName: string) => void,
+ * }} DataTableElement
+ */
+
 // Loaded CSVs show this many rows until the user asks for all of them.
 const COLLAPSED_ROWS = 10;
 
@@ -21,13 +31,15 @@ function createNumberInput(axis, rowNumber) {
  * @param {Object} [options={}] - The callback configuration object.
  * @param {Function} [options.onPointsChange=doNothing] - Callback triggered when any point value changes.
  * @param {number} [options.startingRowCount=3] - The number of rows to start with.
- * @returns {HTMLDivElement} The constructed DOM.
+ * @returns {DataTableElement} The constructed DOM.
  */
 export function DataTable({
   onPointsChange = doNothing,
   startingRowCount = 3,
 } = {}) {
-  const dataTable = document.createElement("div");
+  const dataTable = /** @type {DataTableElement} */ (
+    document.createElement("div")
+  );
   dataTable.className = "data-table";
   dataTable.innerHTML = `
     <div class="table-scroll">
@@ -42,6 +54,7 @@ export function DataTable({
     <button type="button" class="add-row">Add row</button>
   `;
   const tableBody = dataTable.querySelector("tbody");
+  /** @type {HTMLButtonElement} */
   const showAllButton = dataTable.querySelector(".show-all");
   const [seriesHeader, xHeader, yHeader] = dataTable.querySelectorAll("th");
   let expanded = false;
@@ -114,8 +127,8 @@ export function DataTable({
     seriesHeader.hidden = !points.some((point) => point.series !== undefined);
     for (const point of points) {
       const [xInput, yInput] = addRow(point.series).querySelectorAll("input");
-      xInput.value = point.x;
-      yInput.value = point.y;
+      xInput.value = String(point.x);
+      yInput.value = String(point.y);
     }
     expanded = false;
     applyCollapse();

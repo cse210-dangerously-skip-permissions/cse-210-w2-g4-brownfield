@@ -20,8 +20,6 @@
   "exclude": [
     "node_modules",
     "test-results",
-    "components/DataTable.js",
-    "components/GraphSettings.js",
     "csv_loader.js",
     "graphExport.js",
     "e2e/graph-export.spec.js",

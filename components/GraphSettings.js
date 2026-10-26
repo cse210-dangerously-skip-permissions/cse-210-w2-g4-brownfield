@@ -2,6 +2,36 @@
 const doNothing = () => {};
 
 /**
+ * The Axes column, with a method to show axis names loaded from a CSV.
+ * @typedef {HTMLFieldSetElement & {setAxisNames: (xName: string, yName: string) => void}} AxesSettingsElement
+ */
+
+/**
+ * The whole settings panel, with a method to show axis names loaded from a CSV.
+ * @typedef {HTMLDivElement & {setAxisNames: (xName: string, yName: string) => void}} GraphSettingsElement
+ */
+
+/**
+ * Gets the form control that fired an event. Every listener in this file is on
+ * an input or a select, so reading value, checked, or files is safe.
+ * @param {Event} event - The input or change event.
+ * @returns {HTMLInputElement} The control that fired it.
+ */
+function inputOf(event) {
+  return /** @type {HTMLInputElement} */ (event.target);
+}
+
+/**
+ * Finds a form control in a settings column by its name attribute.
+ * @param {HTMLElement} column - The settings column to search.
+ * @param {string} name - The control's name attribute.
+ * @returns {HTMLInputElement | HTMLSelectElement} The control.
+ */
+function findInput(column, name) {
+  return column.querySelector(`[name="${name}"]`);
+}
+
+/**
  * Builds a scrollable column
  * @param {string} title - The heading name that appears at the top of the fieldset box
  * @param {string} innerHtml - The form controls (inputs, buttons, dropdowns) placed inside that section.
@@ -24,7 +54,7 @@ function createSettingsColumn(title, innerHtml) {
 function PlotSettings({
   onPlotTypeChange = doNothing,
   onTitleChange = doNothing,
-}) {
+} = {}) {
   const column = createSettingsColumn(
     "Plot",
     `
@@ -38,13 +68,13 @@ function PlotSettings({
   column
     .querySelectorAll('[name="plot-type"]')
     .forEach((radioButton) =>
-      radioButton.addEventListener("change", () =>
-        onPlotTypeChange(radioButton.value),
+      radioButton.addEventListener("change", (event) =>
+        onPlotTypeChange(inputOf(event).value),
       ),
     );
-  column
-    .querySelector('[name="title"]')
-    .addEventListener("input", (event) => onTitleChange(event.target.value));
+  findInput(column, "title").addEventListener("input", (event) =>
+    onTitleChange(inputOf(event).value),
+  );
   return column;
 }
 
@@ -54,7 +84,7 @@ function PlotSettings({
  * @param {Function} [options.onCsvLoad=doNothing] - Callback triggered with the loaded File object when a valid CSV is chosen.
  * @returns {HTMLFieldSetElement} The constructed DOM.
  */
-function DataSettings({ onCsvLoad = doNothing }) {
+function DataSettings({ onCsvLoad = doNothing } = {}) {
   const column = createSettingsColumn(
     "Data",
     `
@@ -66,11 +96,11 @@ function DataSettings({ onCsvLoad = doNothing }) {
   `,
   );
   column.querySelector('[name="csv"]').addEventListener("change", (event) => {
-    const file = event.target.files[0];
+    const file = inputOf(event).files[0];
     if (!file) return;
     column.querySelector(".file-name").textContent = file.name;
     onCsvLoad(file);
-    event.target.value = ""; // so choosing the same file again still fires 'change'
+    inputOf(event).value = ""; // so choosing the same file again still fires 'change'
   });
   return column;
 }
@@ -81,9 +111,9 @@ function DataSettings({ onCsvLoad = doNothing }) {
  * @param {Function} [options.onPointColorChange=doNothing] - Callback triggered when the point color value changes.
  * @param {Function} [options.onLineColorChange=doNothing] - Callback triggered when the line color value changes.
  * @param {Function} [options.onAxesColorChange=doNothing] - Callback triggered when the axes color value changes.
- * @param {function(string): void} [options.onBackgroundColorChange=doNothing] - Receives the selected background color as a hexadecimal string.
- * @param {function(boolean): void} [options.onTransparentBackgroundChange=doNothing] - Receives whether the background is transparent.
- * @param {function(boolean): void} [options.onShowGridChange=doNothing] - Receives whether the background grid is shown.
+ * @param {(color: string) => void} [options.onBackgroundColorChange=doNothing] - Receives the selected background color as a hexadecimal string.
+ * @param {(transparent: boolean) => void} [options.onTransparentBackgroundChange=doNothing] - Receives whether the background is transparent.
+ * @param {(showGrid: boolean) => void} [options.onShowGridChange=doNothing] - Receives whether the background grid is shown.
  * @param {Function} [options.onPointStyleChange=doNothing] - Callback triggered when the point shape/style selection changes.
  * @returns {HTMLFieldSetElement} The constructed DOM.
  */
@@ -95,7 +125,7 @@ function StyleSettings({
   onTransparentBackgroundChange = doNothing,
   onShowGridChange = doNothing,
   onPointStyleChange = doNothing,
-}) {
+} = {}) {
   const column = createSettingsColumn(
     "Style",
     `
@@ -115,28 +145,28 @@ function StyleSettings({
     </label>
   `,
   );
-  const getInput = (name) => column.querySelector(`[name="${name}"]`);
+  const getInput = (name) => findInput(column, name);
   getInput("point-color").addEventListener("input", (event) =>
-    onPointColorChange(event.target.value),
+    onPointColorChange(inputOf(event).value),
   );
   getInput("line-color").addEventListener("input", (event) =>
-    onLineColorChange(event.target.value),
+    onLineColorChange(inputOf(event).value),
   );
   getInput("axes-color").addEventListener("input", (event) =>
-    onAxesColorChange(event.target.value),
+    onAxesColorChange(inputOf(event).value),
   );
   getInput("background-color").addEventListener("input", (event) =>
-    onBackgroundColorChange(event.target.value),
+    onBackgroundColorChange(inputOf(event).value),
   );
   getInput("transparent-background").addEventListener("change", (event) => {
-    getInput("background-color").disabled = event.target.checked;
-    onTransparentBackgroundChange(event.target.checked);
+    getInput("background-color").disabled = inputOf(event).checked;
+    onTransparentBackgroundChange(inputOf(event).checked);
   });
   getInput("show-grid").addEventListener("change", (event) =>
-    onShowGridChange(event.target.checked),
+    onShowGridChange(inputOf(event).checked),
   );
   getInput("point-style").addEventListener("change", (event) =>
-    onPointStyleChange(event.target.value),
+    onPointStyleChange(inputOf(event).value),
   );
   return column;
 }
@@ -147,16 +177,17 @@ function StyleSettings({
  * @param {Function} [options.onXAxisNameChange=doNothing] - Callback triggered when the X-axis name input changes.
  * @param {Function} [options.onYAxisNameChange=doNothing] - Callback triggered when the Y-axis name input changes.
  * @param {Function} [options.onAxisRangeChange=doNothing] - Callback triggered when any axis range value changes.
- * @returns {HTMLFieldSetElement} The constructed DOM.
+ * @returns {AxesSettingsElement} The constructed DOM.
  */
 function AxesSettings({
   onXAxisNameChange = doNothing,
   onYAxisNameChange = doNothing,
   onAxisRangeChange = doNothing,
-}) {
-  const column = createSettingsColumn(
-    "Axes",
-    `
+} = {}) {
+  const column = /** @type {AxesSettingsElement} */ (
+    createSettingsColumn(
+      "Axes",
+      `
     <label>X axis name <input type="text" name="x-name" placeholder="x"></label>
     <label>Y axis name <input type="text" name="y-name" placeholder="y"></label>
     <div class="range-grid">
@@ -166,13 +197,14 @@ function AxesSettings({
       <label>Y max <input type="number" step="any" name="y-max" placeholder="auto"></label>
     </div>
   `,
+    )
   );
-  const getInput = (name) => column.querySelector(`[name="${name}"]`);
+  const getInput = (name) => findInput(column, name);
   getInput("x-name").addEventListener("input", (event) =>
-    onXAxisNameChange(event.target.value),
+    onXAxisNameChange(inputOf(event).value),
   );
   getInput("y-name").addEventListener("input", (event) =>
-    onYAxisNameChange(event.target.value),
+    onYAxisNameChange(inputOf(event).value),
   );
 
   // Show axis names set from csv
@@ -200,10 +232,12 @@ function AxesSettings({
 /**
  * Renders the full GraphSettings component containing all settings columns.
  * @param {Object} [callbacks={}] - Object containing callback handlers for all settings actions.
- * @returns {HTMLDivElement} The constructed DOM container.
+ * @returns {GraphSettingsElement} The constructed DOM container.
  */
 export function GraphSettings(callbacks = {}) {
-  const graphSettings = document.createElement("div");
+  const graphSettings = /** @type {GraphSettingsElement} */ (
+    document.createElement("div")
+  );
   graphSettings.className = "graph-settings";
 
   const columns = document.createElement("div");
