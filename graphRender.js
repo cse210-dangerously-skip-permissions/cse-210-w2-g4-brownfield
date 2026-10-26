@@ -196,6 +196,13 @@ function createScale(min, max, pixelMin, pixelMax, invert = false) {
   };
 }
 
+/**
+ * Creates an SVG element and sets the given attributes on it.
+ * @template {keyof SVGElementTagNameMap} K
+ * @param {K} name SVG tag name, such as "circle" or "text".
+ * @param {Object} [attributes] Attribute names and values.
+ * @returns {SVGElementTagNameMap[K]} The new element, typed by its tag name, not yet added to the page.
+ */
 function svgElement(name, attributes = {}) {
   const element = document.createElementNS(SVG_NS, name);
   for (const [key, value] of Object.entries(attributes))
@@ -203,15 +210,28 @@ function svgElement(name, attributes = {}) {
   return element;
 }
 
+/**
+ * Adds a text element to the SVG.
+ * @param {SVGElement} svg The chart SVG.
+ * @param {string} text The text to show.
+ * @param {number} x X position.
+ * @param {number} y Y position.
+ * @param {Object} [attributes] Extra attributes, such as class or text-anchor.
+ * @returns {void}
+ */
 function addText(svg, text, x, y, attributes = {}) {
   const element = svgElement("text", { x, y, ...attributes });
   element.textContent = text;
   svg.appendChild(element);
 }
 
-// Ticks are already rounded to their step, so print them in full. Cutting
-// them to a few significant digits made labels like 1000000001 and
-// 1000000002 both show as 1000000000.
+/**
+ * Prints a tick value in full. Ticks are already rounded to their step, and cutting
+ * them to a few significant digits made labels like 1000000001 and 1000000002 both
+ * show as 1000000000.
+ * @param {number} value Tick value.
+ * @returns {string} The label text.
+ */
 function formatTick(value) {
   return String(value);
 }
@@ -453,6 +473,17 @@ function prepareChart(graph, container, title) {
   return { svg, points: visiblePoints, allPoints: points, scaleX, scaleY };
 }
 
+/**
+ * Draws one mark per point in the chosen point style. Each mark carries its point
+ * index and a hover tooltip, so clicking it can jump to the matching table row.
+ * @param {SVGElement} svg The chart SVG.
+ * @param {Object[]} points Points to draw, each with x, y, index, and an optional series.
+ * @param {(value: number) => number} scaleX Turns an x value into an SVG x position.
+ * @param {(value: number) => number} scaleY Turns a y value into an SVG y position.
+ * @param {Object} graph Graph settings from graphState.js.
+ * @param {string} color Fill or stroke color for the marks.
+ * @returns {void}
+ */
 function drawPoints(svg, points, scaleX, scaleY, graph, color) {
   for (const point of points) {
     const x = scaleX(point.x);
@@ -504,6 +535,12 @@ function finishChart(chart, container, groups, colorFor) {
   container.replaceChildren(chart.svg);
 }
 
+/**
+ * Draws a scatter chart into the container, one color per series.
+ * @param {Object} graph Graph settings and point data from graphState.js.
+ * @param {Element} container The chart section.
+ * @returns {void}
+ */
 function renderScatterPlot(graph, container) {
   const chart = prepareChart(graph, container, "Scatter graph");
   if (!chart) return;
@@ -527,6 +564,13 @@ function renderScatterPlot(graph, container) {
   finishChart(chart, container, groups, pointColor);
 }
 
+/**
+ * Draws a line chart: one line per series through all points sorted by x, clipped
+ * to the plot area, plus dots for the points inside the range.
+ * @param {Object} graph Graph settings and point data from graphState.js.
+ * @param {Element} container The chart section.
+ * @returns {void}
+ */
 function renderLineChart(graph, container) {
   const chart = prepareChart(graph, container, "Line graph");
   if (!chart) return;
