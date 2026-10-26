@@ -76,7 +76,7 @@ The repo-wide formatting commit is listed in `.git-blame-ignore-revs`. To skip i
 
 - `npm run typecheck` runs TypeScript (`tsc`) over the JavaScript to check the JSDoc types. It emits nothing, the app still runs the `.js` files as they are. CI runs it with lint.
 - Settings live in `tsconfig.json`. Strict mode is off for now because most functions have no JSDoc types yet.
-- Files that do not pass yet are listed under `exclude` in `tsconfig.json`. Every other `.js` file, including new ones, is checked. When you fix a listed file, remove it from the list.
+- Every `.js` file is checked except `node_modules` and `test-results`.
 
 ## Test coverage
 

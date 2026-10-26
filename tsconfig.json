@@ -15,7 +15,6 @@
     "skipLibCheck": true
   },
   "include": ["**/*.js"],
-  // Files that do not pass yet. Remove a file from this list once its type
-  // errors are fixed, so the check covers it from then on.
+  // Not source code: dependencies and Playwright output.
   "exclude": ["node_modules", "test-results"]
 }
