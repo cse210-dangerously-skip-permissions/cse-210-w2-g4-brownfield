@@ -1,4 +1,6 @@
 # Review requests by area, proposed from contribution history (Oct 25).
+# These are temporary defaults until people find their roles, not
+# team-agreed ownership. Comment on this PR if an area should change.
 # One approving review per PR is already required by branch protection.
 # GitHub reads bottom-up: the LAST matching pattern wins, so the
 # catch-all comes first and the specific areas below override it.
@@ -29,8 +31,8 @@
 /graphExport.js                @EnderturtleOrz
 
 # App shell and styles
-/index.html                    @EnderturtleOrz
-/style.css                     @EnderturtleOrz
+/index.html                    @EnderturtleOrz @kemsig
+/style.css                     @EnderturtleOrz @kemsig
 
 # Data table component
 /components/DataTable.js       @PeterBahariance
