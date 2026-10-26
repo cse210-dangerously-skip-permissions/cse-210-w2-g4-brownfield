@@ -22,6 +22,7 @@ Direct pushes to `main` are disabled, and the test and e2e checks must pass befo
 
 ```
 npm run lint           # ESLint
+npm run typecheck      # JSDoc type check
 npm test               # unit tests
 npm run test:coverage  # unit tests + coverage baseline check
 npm run test:e2e       # Playwright browser tests
@@ -35,4 +36,4 @@ npm run format:check   # Prettier check only
 
 - Prettier default style (double quotes, 2-space indent), enforced in CI.
 - ESLint recommended rules; per-file exceptions live in `eslint.config.js`.
-- JSDoc on new or changed functions (also in the PR template checklist).
+- JSDoc on new or changed functions (also in the PR template checklist). `npm run typecheck` checks it against the code.

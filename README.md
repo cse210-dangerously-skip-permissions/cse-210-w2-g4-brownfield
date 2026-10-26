@@ -24,6 +24,12 @@ ESLint uses the recommended rules. `server.js`, `test/`, `e2e/`, and `playwright
 
 The repo-wide formatting commit is listed in `.git-blame-ignore-revs`. To skip it in local `git blame`, run `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
 
+## Type checking
+
+- `npm run typecheck` runs TypeScript (`tsc`) over the JavaScript to check the JSDoc types. It emits nothing, the app still runs the `.js` files as they are. CI runs it with lint.
+- Settings live in `tsconfig.json`. Strict mode is off for now because most functions have no JSDoc types yet.
+- Files that do not pass yet are listed under `exclude` in `tsconfig.json`. Every other `.js` file, including new ones, is checked. When you fix a listed file, remove it from the list.
+
 ## Test coverage
 
 - `npm run test:coverage` runs the unit tests with coverage and compares lines, branches, and functions against `coverage-baseline.json`. CI runs this instead of `npm test`. It needs Node.js 22.5 or newer.

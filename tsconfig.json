@@ -1,0 +1,30 @@
+// Type checks the JavaScript and its JSDoc with `npm run typecheck`. Nothing is
+// emitted; the app still runs the .js files directly.
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    // TypeScript 7 turns strict on by default. Most of the code has no JSDoc
+    // types yet, so strict mode would fail on every untyped parameter.
+    "strict": false,
+    "target": "es2022",
+    "module": "preserve",
+    "lib": ["es2022", "dom", "dom.iterable"],
+    "types": ["node"],
+    "skipLibCheck": true
+  },
+  "include": ["**/*.js"],
+  // Files that do not pass yet. Remove a file from this list once its type
+  // errors are fixed, so the check covers it from then on.
+  "exclude": [
+    "node_modules",
+    "test-results",
+    "components/DataTable.js",
+    "components/GraphSettings.js",
+    "csv_loader.js",
+    "graphExport.js",
+    "e2e/graph-export.spec.js",
+    "test/graphExport.test.js"
+  ]
+}
