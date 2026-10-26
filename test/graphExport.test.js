@@ -85,6 +85,8 @@ function setup({
   const context = {
     Blob,
     Image: class {
+      onload = null;
+      onerror = null;
       set src(value) {
         if (failImage) this.onerror();
         else this.onload();
@@ -173,8 +175,8 @@ test("export includes standalone dimensions, background, styles and clipping wit
   serializeGraph(svg);
   const copy = record.serialized;
   assert.equal(copy.attributes.xmlns, "http://www.w3.org/2000/svg");
-  assert.equal(copy.attributes.width, 800);
-  assert.equal(copy.attributes.height, 400);
+  assert.equal(copy.attributes.width, "800");
+  assert.equal(copy.attributes.height, "400");
   assert.equal(copy.attributes.viewBox, "0 0 800 400");
   assert.equal(copy.children[0].attributes.fill, "#ffffff");
   assert.equal(copy.children[1].textContent, "Temperature & Time");

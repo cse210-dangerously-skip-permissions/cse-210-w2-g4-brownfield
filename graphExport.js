@@ -25,9 +25,13 @@ export function serializeGraph(svg) {
   if (!svg)
     throw new Error("Add at least one complete X/Y pair before saving.");
 
-  const copy = svg.cloneNode(true);
+  const copy = /** @type {SVGSVGElement} */ (svg.cloneNode(true));
   const originals = [svg, ...svg.querySelectorAll("*")];
-  const copies = [copy, ...copy.querySelectorAll("*")];
+  // Everything inside the chart SVG is an SVG element, so each copy has a style.
+  const copies = [
+    copy,
+    .../** @type {NodeListOf<SVGElement>} */ (copy.querySelectorAll("*")),
+  ];
   originals.forEach((element, index) => {
     const style = getComputedStyle(element);
     for (const property of STYLE_PROPERTIES) {
@@ -42,8 +46,8 @@ export function serializeGraph(svg) {
 
   const { width, height } = svg.viewBox.baseVal;
   copy.setAttribute("xmlns", SVG_NS);
-  copy.setAttribute("width", width);
-  copy.setAttribute("height", height);
+  copy.setAttribute("width", String(width));
+  copy.setAttribute("height", String(height));
   return new XMLSerializer().serializeToString(copy);
 }
 

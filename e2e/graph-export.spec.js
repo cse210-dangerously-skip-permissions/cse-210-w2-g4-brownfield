@@ -58,11 +58,14 @@ async function previewSnapshot(page) {
       document.querySelectorAll(
         "#graph-settings input, #graph-settings select, #data-table input",
       ),
-    ).map((input) => ({
-      value: input.value,
-      checked: input.checked,
-      disabled: input.disabled,
-    })),
+    ).map((element) => {
+      const input = /** @type {HTMLInputElement} */ (element);
+      return {
+        value: input.value,
+        checked: input.checked,
+        disabled: input.disabled,
+      };
+    }),
   }));
 }
 
@@ -113,7 +116,7 @@ for (const format of ["jpeg", "png", "svg"]) {
       const point = await svg
         .locator("circle.data-point")
         .first()
-        .evaluate((element) => ({
+        .evaluate((/** @type {SVGCircleElement} */ element) => ({
           x: element.cx.baseVal.value,
           y: element.cy.baseVal.value,
         }));
