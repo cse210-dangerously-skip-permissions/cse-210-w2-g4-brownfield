@@ -59,7 +59,10 @@ export function DataTable({
   const [seriesHeader, xHeader, yHeader] = dataTable.querySelectorAll("th");
   let expanded = false;
 
-  // Hide rows past the limit unless expanded; the button toggles between the two.
+  /**
+   * Hides rows past the limit unless expanded, and updates the show-all button to match.
+   * @returns {void}
+   */
   function applyCollapse() {
     const rows = [...tableBody.rows];
     rows.forEach((row, i) => {
@@ -71,7 +74,11 @@ export function DataTable({
       : `Show all ${rows.length} rows`;
   }
 
-  // Series names come only from a three-column CSV, so they are shown read-only.
+  /**
+   * Appends an empty row. Series names come only from a three-column CSV, so they are shown read-only.
+   * @param {string} [series] - Series name for the row; omitted for two-column data.
+   * @returns {HTMLTableRowElement} The new row.
+   */
   function addRow(series) {
     const rowNumber = tableBody.rows.length + 1;
     const row = tableBody.insertRow();
@@ -85,14 +92,20 @@ export function DataTable({
     return row;
   }
 
-  // Rows with both values filled, in order: the same rows readPoints turns into points.
+  /**
+   * Rows with both values filled, in order: the same rows readPoints turns into points.
+   * @returns {HTMLTableRowElement[]} The complete rows.
+   */
   function completeRows() {
     return [...tableBody.rows].filter((row) =>
       [...row.querySelectorAll("input")].every((input) => input.value !== ""),
     );
   }
 
-  // Read every valid row-pair into a list
+  /**
+   * Reads every complete row with finite numbers into a point.
+   * @returns {{x: number, y: number, series?: string}[]} The points, in table order.
+   */
   function readPoints() {
     return completeRows()
       .map((row) => ({
@@ -107,7 +120,12 @@ export function DataTable({
       .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
   }
 
-  // Checking if two lists of points have the same points
+  /**
+   * Checks whether two point lists hold the same points in the same order.
+   * @param {{x: number, y: number, series?: string}[]} a - First list.
+   * @param {{x: number, y: number, series?: string}[]} b - Second list.
+   * @returns {boolean} True if every point matches.
+   */
   function samePoints(a, b) {
     return (
       a.length === b.length &&
@@ -120,7 +138,11 @@ export function DataTable({
     );
   }
 
-  // rebuild data table from points only when they differ from the current ppoits
+  /**
+   * Rebuilds the table from points, only when they differ from the current points.
+   * @param {{x: number, y: number, series?: string}[]} points - Points to show.
+   * @returns {void}
+   */
   dataTable.setPoints = function (points) {
     if (samePoints(points, readPoints())) return;
     tableBody.replaceChildren();
@@ -134,7 +156,11 @@ export function DataTable({
     applyCollapse();
   };
 
-  // Jump to the row behind the nth point (as numbered by readPoints), expanding if hidden.
+  /**
+   * Jumps to the row behind the nth point (as numbered by readPoints), expanding if hidden.
+   * @param {number} pointIndex - Index of the point in readPoints order.
+   * @returns {void}
+   */
   dataTable.focusRow = function (pointIndex) {
     const row = completeRows()[pointIndex];
     if (!row) return;
@@ -148,7 +174,12 @@ export function DataTable({
     row.querySelector("input").focus();
   };
 
-  // Column headers show the axis names or "X axis" / "Y axis" if empty
+  /**
+   * Sets the column headers to the axis names, or "X axis" / "Y axis" if empty.
+   * @param {string} xName - X axis name.
+   * @param {string} yName - Y axis name.
+   * @returns {void}
+   */
   dataTable.setAxisNames = function (xName, yName) {
     xHeader.textContent = xName || "X axis";
     yHeader.textContent = yName || "Y axis";
