@@ -17,5 +17,5 @@
   "include": ["**/*.js"],
   // Files that do not pass yet. Remove a file from this list once its type
   // errors are fixed, so the check covers it from then on.
-  "exclude": ["node_modules", "test-results", "csv_loader.js"]
+  "exclude": ["node_modules", "test-results"]
 }
