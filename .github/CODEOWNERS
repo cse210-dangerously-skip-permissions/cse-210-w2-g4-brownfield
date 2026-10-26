@@ -1,0 +1,50 @@
+# Review requests by area, proposed from contribution history (Oct 25).
+# One approving review per PR is already required by branch protection.
+# GitHub reads bottom-up: the LAST matching pattern wins, so the
+# catch-all comes first and the specific areas below override it.
+
+# Catch-all: inherited or thin-evidence files (server.js, graphState.js,
+# csv_loader.js, GraphSettings.js, older tests, samples, misc config)
+*                              @kemsig
+
+# CI, lint, and test tooling
+/.github/workflows/            @kemsig
+/eslint.config.js              @kemsig
+/playwright.config.js          @kemsig @EnderturtleOrz
+
+# Coverage tooling
+/coverage-ratchet.js           @Kayla-Phillips
+/coverage-baseline.json        @Kayla-Phillips
+
+# Formatting and pre-commit tooling
+/.prettierrc.json              @windymount
+/.prettierignore               @windymount
+/.husky/                       @windymount
+/.git-blame-ignore-revs        @windymount
+
+# Graph rendering core
+/graphRender.js                @PeterBahariance @kevinnie2003 @huangxinxinyu
+
+# Export feature
+/graphExport.js                @EnderturtleOrz
+
+# App shell and styles
+/index.html                    @EnderturtleOrz
+/style.css                     @EnderturtleOrz
+
+# Data table component
+/components/DataTable.js       @PeterBahariance
+
+# Data processing
+/data_processer.js             @PeterBahariance
+
+# Unit tests
+/test/graphRender.test.js      @dhillonsehaj
+/test/graphState.test.js       @dhillonsehaj
+/test/graphExport.test.js      @EnderturtleOrz
+
+# E2E tests
+/e2e/smoke.spec.js             @PeterBahariance
+/e2e/graph-export.spec.js      @EnderturtleOrz
+/e2e/visual.spec.js            @EnderturtleOrz
+/e2e/visual.spec.js-snapshots/ @EnderturtleOrz
