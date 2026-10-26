@@ -1,12 +1,60 @@
-# cse-210-warm-up-graphing
+# Simpligraph
 
-Graph Tool (CSE 210 Warm Up)
+A small browser app for CSE 210 that turns X/Y data into a line or scatter graph. Type points into the table or load a CSV, style the graph, and save it as JPEG, PNG, or SVG. It is plain HTML, CSS, and JavaScript with no build step.
+
+## Features
+
+- Enter points in the data table, or load a CSV with `x,y` columns or `series,x,y` columns. Each series gets its own color and a legend. Example files are in `samples/`.
+- Line or scatter graph, with a title, axis names, custom axis ranges, colors, point styles, an optional grid, and a transparent background.
+- Axes cross at the origin when the data includes negative values.
+- Clicking a point jumps to its row in the data table.
+- Save the graph as JPEG, PNG, or SVG.
 
 ## Run locally
 
-1. Install [Node.js](https://nodejs.org/) if it is not already installed.
+1. Install [Node.js](https://nodejs.org/) 22.5 or newer.
 2. From this project folder, run `npm start`.
 3. Open [http://localhost:3000](http://localhost:3000) in a browser.
+
+## Tests
+
+- `npm test` runs the unit tests in `test/` with Node's built-in test runner. They load the browser source files into Node with small fake DOM objects, so no browser is needed.
+- `npm run test:e2e` runs the Playwright tests in `e2e/` in Chromium. Playwright starts the server for you. Before the first run, install the browser with `npx playwright install chromium`. `e2e/visual.spec.js` compares screenshots against the images in `e2e/visual.spec.js-snapshots/`.
+- `npm run test:coverage` runs the unit tests with a coverage check, see [Test coverage](#test-coverage).
+
+## Architecture
+
+All graph data lives in one state object in `graphState.js`. Inputs never draw the graph directly. They call `setGraphValue(key, value)`, and every change sends a fresh copy of the state to each subscriber. `index.html` wires the pieces together: it creates the components, connects their callbacks to the state, and subscribes the renderer and the components to state changes.
+
+```mermaid
+flowchart LR
+  Table[DataTable.js] -- points --> State[graphState.js]
+  Settings[GraphSettings.js] -- style, axes, range --> State
+  Settings -- CSV file --> Loader[csv_loader.js]
+  Loader -- text --> Parser[data_processer.js]
+  Parser -- points, headers --> Loader
+  Loader -- points, axis names --> State
+  State -- copy of state --> Render[graphRender.js]
+  State -- points, axis names --> Table
+  State -- axis names --> Settings
+  Render -- SVG --> Chart["#chart"]
+  Chart -- Save graph --> Export[graphExport.js]
+```
+
+| File                          | What it does                                                                                                                                    |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `index.html`                  | Page layout and the wiring between all modules.                                                                                                 |
+| `graphState.js`               | The graph state object, `setGraphValue`, and `subscribeToGraph`.                                                                                |
+| `components/DataTable.js`     | The X/Y input table. Reports edited points and can show points loaded from a CSV.                                                               |
+| `components/GraphSettings.js` | The Plot, Data, Style, and Axes settings columns.                                                                                               |
+| `csv_loader.js`               | Reads an uploaded CSV file and writes the parsed points and axis names to the state. Ignores a read that a newer file or a table edit replaced. |
+| `data_processer.js`           | Parses and validates CSV text: headers, number formats, series, row limits, and error messages.                                                 |
+| `graphRender.js`              | Draws the graph as SVG: axis ranges, ticks, grid, axes, points, lines, and the legend.                                                          |
+| `graphExport.js`              | Copies the SVG with its styles inlined and downloads it as SVG, PNG, or JPEG.                                                                   |
+| `style.css`                   | Page and chart styles.                                                                                                                          |
+| `server.js`                   | A small static file server for local development and the Playwright tests.                                                                      |
+
+`data_processer.js` and `csv_loader.js` are classic scripts loaded with `<script>` tags, and they share functions such as `parseCSV` and `createCsvLoader` through globals. The other modules are ES modules.
 
 ## Lint and formatting
 
