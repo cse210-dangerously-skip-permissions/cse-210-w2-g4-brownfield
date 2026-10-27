@@ -3,6 +3,14 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
+const { pathToFileURL } = require("node:url");
+
+let graphMath;
+test.before(async () => {
+  graphMath = await import(
+    pathToFileURL(path.join(__dirname, "../graphMath.js")).href
+  );
+});
 
 /*
  * Minimal DOM element used by graphRender.js.
@@ -68,8 +76,9 @@ function makeElement(tagName) {
 /*
  * Load graphRender.js in an isolated context with the minimal document above.
  * The renderer is browser code, so its ES module exports are removed before it
- * is evaluated by Node's vm module. Every `export function` is stripped (not
- * just renderGraph) so helpers like axisCrossing parse and are returned too.
+ * is evaluated by Node's vm module. The math import is supplied from the real
+ * module so these tests exercise the same calculations as the browser. Every
+ * `export function` is stripped so axisCrossing is returned alongside renderGraph.
  */
 function setupRenderer() {
   const source = fs.readFileSync(
@@ -87,10 +96,12 @@ function setupRenderer() {
     },
   };
 
-  const context = { document };
+  const context = { document, ...graphMath };
 
   const api = vm.runInNewContext(
-    source.replace(/export function /g, "function ") +
+    source
+      .replace(/^import .* from "\.\/graphMath\.js";\n/m, "")
+      .replace(/export function /g, "function ") +
       "\n({ renderGraph, axisCrossing });",
     context,
     { filename: path.join(__dirname, "../graphRender.js") }, // Naming the script lets coverage attribute lines to the source file

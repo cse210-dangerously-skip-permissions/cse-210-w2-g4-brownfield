@@ -49,7 +49,8 @@ flowchart LR
 | `components/GraphSettings.js` | The Plot, Data, Style, and Axes settings columns.                                                                                               |
 | `csv_loader.js`               | Reads an uploaded CSV file and writes the parsed points and axis names to the state. Ignores a read that a newer file or a table edit replaced. |
 | `data_processer.js`           | Parses and validates CSV text: headers, number formats, series, row limits, and error messages.                                                 |
-| `graphRender.js`              | Draws the graph as SVG: axis ranges, ticks, grid, axes, points, lines, and the legend.                                                          |
+| `graphRender.js`              | Draws the graph as SVG: ticks, grid, axes, points, lines, and the legend.                                                                       |
+| `graphMath.js`                | DOM-free axis bounds, tick generation and formatting, and value-to-pixel scales.                                                                |
 | `graphExport.js`              | Copies the SVG with its styles inlined and downloads it as SVG, PNG, or JPEG.                                                                   |
 | `style.css`                   | Page and chart styles.                                                                                                                          |
 | `server.js`                   | A small static file server for local development and the Playwright tests.                                                                      |
