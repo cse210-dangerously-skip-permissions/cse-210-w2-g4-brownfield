@@ -682,3 +682,42 @@ test("long x tick labels are spaced so they do not overlap", () => {
     );
   }
 });
+
+// A typed min or max that leaves no room falls back to a small padded range.
+const noRange = { xMin: null, xMax: null, yMin: null, yMax: null };
+const yLabelText = (range) =>
+  yTickLabels(renderGrid({ range: { ...noRange, ...range } }).svg).map(
+    (node) => node.textContent,
+  );
+
+test("a min above all the data still gives a usable axis", () => {
+  assert.deepEqual(yLabelText({ yMin: 100 }), [
+    "100",
+    "102",
+    "104",
+    "106",
+    "108",
+    "110",
+  ]);
+});
+
+test("a max below all the data still gives a usable axis", () => {
+  assert.deepEqual(yLabelText({ yMax: -50 }), [
+    "-51",
+    "-50.8",
+    "-50.6",
+    "-50.4",
+    "-50.2",
+    "-50",
+  ]);
+});
+
+test("an equal min and max widen the axis around that value", () => {
+  assert.deepEqual(yLabelText({ yMin: 5, yMax: 5 }), [
+    "4",
+    "4.5",
+    "5",
+    "5.5",
+    "6",
+  ]);
+});

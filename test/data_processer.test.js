@@ -307,3 +307,11 @@ test("parseTextInput behaves like parseCSV", () => {
   );
   assert.equal(parseTextInput("").success, false);
 });
+
+// Test 25: every header needs a name, even when the other one is valid
+test("rejects a header row with an empty column name", () => {
+  const result = parseCSV("Time,\n1,72");
+
+  assert.equal(result.success, false);
+  assert.match(result.error, /Every column must have a header/);
+});
