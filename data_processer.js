@@ -5,7 +5,12 @@ const MAX_ROWS = 10000;
 const DECIMAL_PATTERN = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
 const PREFIXED_PATTERN = /^([+-]?)(0[xX][0-9a-fA-F]+|0[oO][0-7]+|0[bB][01]+)$/;
 
-// Commas inside quotes are not supported.
+/**
+ * Splits one CSV line into trimmed fields. Fields wrapped in double quotes lose the quotes.
+ * Commas inside quotes are not supported.
+ * @param {string} line - One line of CSV text.
+ * @returns {string[]} The trimmed field values.
+ */
 function splitFields(line) {
   return line.split(",").map((value) => {
     const trimmed = value.trim();
@@ -20,9 +25,14 @@ function splitFields(line) {
   });
 }
 
-// Returns { number, prefixed } or null if the value is not a number.
-// Only the format is checked, so overflowing values still parse (to Infinity) and are
-// reported as out of range instead of making the first row look like a header.
+/**
+ * Reads a number from text in decimal, hex (0x), octal (0o), or binary (0b) notation.
+ * Only the format is checked, so overflowing values still parse (to Infinity) and are
+ * reported as out of range instead of making the first row look like a header.
+ * @param {string} value - The trimmed field text.
+ * @returns {{ number: number, prefixed: boolean } | null} The number and whether it used
+ * hex/octal/binary notation, or null if the value is not a number.
+ */
 function parseNumber(value) {
   if (DECIMAL_PATTERN.test(value)) {
     return { number: Number(value), prefixed: false };
@@ -38,6 +48,14 @@ function parseNumber(value) {
   return null;
 }
 
+/**
+ * Parses CSV text into graph points. Accepts two columns (x,y) or three (series,x,y),
+ * with or without a header row, and skips blank lines.
+ * @param {string} text - The CSV text.
+ * @returns {{ success: false, error: string } | { success: true, headers: { x: string, y: string }, data: { x: number, y: number, series?: string }[], warnings: string[] }}
+ * On failure, a message that names the row when one is at fault. On success, the axis
+ * names (X and Y when there is no header), the points, and any warnings.
+ */
 function parseCSV(text) {
   if (typeof text !== "string") {
     return {
@@ -167,7 +185,11 @@ function parseCSV(text) {
   };
 }
 
-// For now, text input has to be in CSV format, we can add more formats if wanted.
+/**
+ * Parses pasted text input. For now it has to be in CSV format; more formats can be added.
+ * @param {string} text - The text typed or pasted by the user.
+ * @returns {ReturnType<typeof parseCSV>} The same result as parseCSV.
+ */
 function parseTextInput(text) {
   return parseCSV(text);
 }
