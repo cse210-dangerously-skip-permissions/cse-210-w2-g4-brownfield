@@ -26,6 +26,7 @@
 
 # Graph rendering core
 /graphRender.js                @PeterBahariance @kevinnie2003 @huangxinxinyu
+/graphMath.js                  @PeterBahariance @kevinnie2003 @huangxinxinyu
 
 # Export feature
 /graphExport.js                @EnderturtleOrz
@@ -42,6 +43,7 @@
 
 # Unit tests
 /test/graphRender.test.js      @dhillonsehaj
+/test/graphMath.test.js        @dhillonsehaj
 /test/graphState.test.js       @dhillonsehaj
 /test/graphExport.test.js      @EnderturtleOrz
 
