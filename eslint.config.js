@@ -21,7 +21,7 @@ export default [
     },
   },
   // Classic browser scripts: loaded via <script> tags and sharing top-level
-  // globals with the inline scripts in index.html and test.html. Each file
+  // globals with the inline scripts in index.html. Each file
   // lists the names it shares in an `/* exported */` comment, which ESLint
   // only honors in script mode.
   {
