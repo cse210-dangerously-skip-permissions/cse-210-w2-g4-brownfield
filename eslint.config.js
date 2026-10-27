@@ -5,12 +5,19 @@ import globals from "globals";
 // ES modules, classic browser scripts, and CommonJS (server.js, tests).
 export default [
   js.configs.recommended,
+  // Team style on top of the recommended rules: always === and !==, and no
+  // console output in the app. Formatting (quotes, semicolons, indentation)
+  // is left to Prettier.
   {
     files: ["**/*.js"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "module",
       globals: globals.browser,
+    },
+    rules: {
+      eqeqeq: "error",
+      "no-console": "error",
     },
   },
   // Classic browser scripts: loaded via <script> tags and sharing top-level
@@ -29,6 +36,7 @@ export default [
     rules: { "no-control-regex": "off" },
   },
   // CommonJS with Node globals: static server, unit tests, Playwright files.
+  // They run in a terminal, so they may log with console.
   {
     files: [
       "server.js",
@@ -38,6 +46,7 @@ export default [
       "playwright.config.js",
     ],
     languageOptions: { sourceType: "commonjs", globals: globals.node },
+    rules: { "no-console": "off" },
   },
   {
     files: ["eslint.config.js"],

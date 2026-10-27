@@ -63,11 +63,11 @@ flowchart LR
 - `npm install` sets up a pre-commit hook that formats the files you commit, so you normally do not need to run Prettier yourself. The hook needs Node.js 22.5 or newer. If a staged file has a syntax error, the commit is blocked until you fix it; `git commit --no-verify` skips the hook in an emergency.
 - CI runs lint, unit tests with the coverage check, the format check, and the Playwright tests on every push and pull request. The format check is required: unformatted files fail CI.
 
-Prettier uses its default style (double quotes, 2-space indent) and is pinned to an exact version so formatting stays the same on every machine. Generated files, `samples/`, `Resources/`, and `administrative/` are excluded in `.prettierignore`. `.gitattributes` keeps LF line endings on every OS, including Windows, so the format check gives the same result everywhere.
+Prettier uses its default style (double quotes, semicolons, 2-space indent) and is pinned to an exact version so formatting stays the same on every machine. Generated files, `samples/`, `Resources/`, and `administrative/` are excluded in `.prettierignore`. `.gitattributes` keeps LF line endings on every OS, including Windows, so the format check gives the same result everywhere.
 
-ESLint uses the recommended rules. `server.js`, `test/`, `e2e/`, and `playwright.config.js` are linted as CommonJS with Node globals; everything else as browser code. Exceptions, set in `eslint.config.js`:
+ESLint uses the recommended rules plus two team rules: `eqeqeq` (always `===` and `!==`) and `no-console` (no `console` calls in app code). It does not check formatting; that is Prettier's job. `server.js`, `coverage-ratchet.js`, `test/`, `e2e/`, and `playwright.config.js` are linted as CommonJS with Node globals and may use `console`; everything else as browser code. Exceptions, set in `eslint.config.js`:
 
-- `no-unused-vars` is off in `csv_loader.js` and `data_processer.js`. They are classic browser scripts that share functions through globals, so the rule reports false positives (tracked in #37).
+- `csv_loader.js` and `data_processer.js` are classic browser scripts that share functions through globals. They are linted as scripts, and each lists the names it shares in an `/* exported */` comment so `no-unused-vars` does not flag them.
 - `no-control-regex` is off in `graphExport.js`, which strips control characters from exported file names on purpose.
 
 The repo-wide formatting commit is listed in `.git-blame-ignore-revs`. To skip it in local `git blame`, run `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
