@@ -1,4 +1,26 @@
 //default value of the graph
+/**
+ * @typedef {Object} GraphState
+ * @property {{x: number, y: number, series?: string}[]} points
+ * @property {"line" | "scatter"} type
+ * @property {string} title
+ * @property {string} pointColor
+ * @property {string} lineColor
+ * @property {string} axesColor
+ * @property {string} backgroundColor
+ * @property {boolean} transparentBackground
+ * @property {boolean} showGrid
+ * @property {"circle" | "square" | "triangle" | "cross"} pointStyle
+ * @property {string} xAxisName
+ * @property {string} yAxisName
+ * @property {{
+ *   xMin: number | null,
+ *   xMax: number | null,
+ *   yMin: number | null,
+ *   yMax: number | null
+ * }} range
+ */
+/** @type {GraphState} */
 const graph = {
   points: [],
   type: "line",
@@ -15,11 +37,12 @@ const graph = {
   range: { xMin: null, xMax: null, yMin: null, yMax: null },
 };
 
+/** @type {Array<(graph: GraphState) => void>} */
 const subscribers = [];
 
 /**
- *
- * @param {function} subscriber function to be called whenever graph changes
+ * @param {(graph: GraphState) => void} subscriber
+ *   Function called whenever the graph changes.
  */
 export function subscribeToGraph(subscriber) {
   subscribers.push(subscriber);

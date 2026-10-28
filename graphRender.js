@@ -1,4 +1,5 @@
 import { calculateBounds, createScale, formatTick } from "./graphMath.js";
+/** @typedef {import("./graphState.js").GraphState} GraphState */
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const CHART = {
@@ -99,7 +100,7 @@ function addText(svg, text, x, y, attributes = {}) {
  * @param {{ticks: number[]}} yBounds Bounds and tick values for the y axis.
  * @param {(value: number) => number} scaleX Turns an x value into an SVG x position.
  * @param {(value: number) => number} scaleY Turns a y value into an SVG y position.
- * @param {Object} graph Graph settings from graphState.js.
+ * @param {Partial<GraphState>} graph Graph settings from graphState.js.
  */
 function drawGrid(svg, xBounds, yBounds, scaleX, scaleY, graph) {
   if (!graph.showGrid) return;
@@ -151,7 +152,9 @@ export function axisCrossing(bounds) {
   return bounds.min <= 0 && 0 <= bounds.max ? 0 : bounds.min;
 }
 
-/** Draws both axes, their ticks, and the configured axis labels. */
+/** Draws both axes, their ticks, and the configured axis labels.
+ * @param {Partial<GraphState>} graph
+ */
 function drawAxes(svg, xBounds, yBounds, scaleX, scaleY, graph) {
   const { width, height, margin } = CHART;
   const left = margin.left;
@@ -245,7 +248,9 @@ function drawAxes(svg, xBounds, yBounds, scaleX, scaleY, graph) {
   });
 }
 
-/** Filters input points and prepares the SVG, scales, and axes. */
+/** Filters input points and prepares the SVG, scales, and axes.
+ * @param {Partial<GraphState>} graph
+ */
 function prepareChart(graph, container, title) {
   if (!container || typeof container.replaceChildren !== "function")
     return null;
@@ -347,7 +352,7 @@ function prepareChart(graph, container, title) {
  * @param {Object[]} points Points to draw, each with x, y, index, and an optional series.
  * @param {(value: number) => number} scaleX Turns an x value into an SVG x position.
  * @param {(value: number) => number} scaleY Turns a y value into an SVG y position.
- * @param {Object} graph Graph settings from graphState.js.
+ * @param {Partial<GraphState>} graph Graph settings from graphState.js.
  * @param {string} color Fill or stroke color for the marks.
  * @returns {void}
  */
@@ -404,7 +409,7 @@ function finishChart(chart, container, groups, colorFor) {
 
 /**
  * Draws a scatter chart into the container, one color per series.
- * @param {Object} graph Graph settings and point data from graphState.js.
+ * @param {Partial<GraphState>} graph Graph settings and point data from graphState.js.
  * @param {Element} container The chart section.
  * @returns {void}
  */
@@ -434,7 +439,7 @@ function renderScatterPlot(graph, container) {
 /**
  * Draws a line chart: one line per series through all points sorted by x, clipped
  * to the plot area, plus dots for the points inside the range.
- * @param {Object} graph Graph settings and point data from graphState.js.
+ * @param {Partial<GraphState>} graph Graph settings and point data from graphState.js.
  * @param {Element} container The chart section.
  * @returns {void}
  */
@@ -505,7 +510,7 @@ function renderLineChart(graph, container) {
 /**
  * Renders graph state from the UI into the chart container.
  * A missing graph renders the empty-state message instead of throwing.
- * @param {Object} graph Graph settings and point data from graphState.js.
+ * @param {Partial<GraphState> | null | undefined} graph Graph settings and point data from graphState.js.
  * @param {Element} container The chart section.
  */
 export function renderGraph(graph, container) {
